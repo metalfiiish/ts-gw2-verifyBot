@@ -1,0 +1,25 @@
+# This script is intended to be used as an automatic form of Teamspeak authentication for Guild Wars 2.
+
+# REQUIRES:
+* Python 3.4
+* Third Party Modules = [ts3:'https://pypi.python.org/pypi/ts3/0.6.6, 
+                        gw2api:'https://pypi.python.org/pypi/gw2api']
+                        
+NOTE: gw2api by author 'hackedd' is clean and simple but for some reason one line of code was throwing the v2/endpoint.py off in Python 3.4 (was fine in 2.7). However, I had to use 3.4 so I tweaked his code as follows:
+
+File: v2/endpoint.py
+
+Original:
+for key, link in r.links.iteritems():
+
+Fixed:
+for key, link in r.links.items():
+
+
+
+TODO:
+With recent WvW server merging a server mate and myself are working to tweak the code for multiple servers and some othe minor things shortly.
+
+
+
+Please modify the bot.conf variables as needed.
