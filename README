@@ -5,7 +5,7 @@ Using the ts3 module, the bot logs intot he teamspeak server by IP via the serve
 
 Bot will sit in any specificed channel (defined in the bot.conf)and wait for commands to be sent. Currently the commands are limited, but the framework is there add custom ones yourself.
 
-The guild wars authentication uses the API keys from user's accounts.
+The guild wars authentication uses the API keys from user's accounts. It also requires at least 1 character on said account to be level 80 ( level is configurable in bot.conf).
 
 
 # REQUIRES:
