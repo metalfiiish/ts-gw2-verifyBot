@@ -10,9 +10,15 @@ The guild wars authentication uses the API keys from user's accounts. It also re
 
 # REQUIRES:
 * Python 3.4
-* Third Party Modules = [ts3:'https://pypi.python.org/pypi/ts3/0.6.6, 
-                        gw2api:'https://pypi.python.org/pypi/gw2api']
-                        
+* Third Party Modules:
+
+>>> pkg_resources.get_distribution("gw2api").version
+'1.0.8'
+
+>>> pkg_resources.get_distribution("ts3").version
+'0.6.7'
+
+
 NOTE: gw2api module by author 'hackedd' is clean and simple but for some reason one line of code was throwing the v2/endpoint.py off in Python 3.4 (was fine in 2.7). However, I had to use 3.4 so I tweaked his code as follows:
 
 File: v2/endpoint.py
