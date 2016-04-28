@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import ts3 #teamspeak library
 import time #time for sleep function
 import re #regular expressions
