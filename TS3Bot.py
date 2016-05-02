@@ -69,8 +69,8 @@ bot_msg_verify='''
       TCWarrior.5463 7895D172-4991-9546-CB5B-78B015B0D8A72BC0E007-4FAF-48C3-9BF1-DA1OAD241266
 
 
-   NOTE: Guild Wars 2 API keys can be created/deleted via ArenaNet site (https://account.arena.net/login?redirect_uri=%2Fapplications). 
- 
+   NOTE: Guild Wars 2 API keys can be created/deleted via ArenaNet site (https://account.arena.net/login?redirect_uri=%2Fapplications).
+
 '''
 
 #Message sent for sucesful verification
@@ -82,8 +82,8 @@ bot_msg_success='''
 bot_msg_fail='''
   Unfortantely your authentication failed. Ask the Teamspeak admin to review the logs.
      ~ Likely a bad API key or incorrect API settings. ( API Key needs access to 'account' and 'character' )
-     
-NOTE: Guild Wars 2 API keys permission can be viewed via ArenaNet site (https://account.arena.net/login?redirect_uri=%2Fapplications). 
+
+NOTE: Guild Wars 2 API keys permission can be viewed via ArenaNet site (https://account.arena.net/login?redirect_uri=%2Fapplications).
 '''
 
 #Message sent for client TS ID limit reached (trying to access Teamspeack from a second computer after having authenticated on a prior machine
@@ -101,7 +101,7 @@ bot_msg_alrdy_verified='''
 #Message sent to someone who is not verified but asks to set guild tags via channel text.
 bot_msg_sguild_nv='''
   I'm sorry, I can't help you set guild tags unless you are authenticated. Please verify first by replying to me with your Account Name (name with numbers) and API key.
-  
+
    Ex.
       <Account Name> <API Key>
       TCWarrior.5463 7895D172-4991-9546-CB5B-78B015B0D8A72BC0E007-4FAF-48C3-9BF1-DA1OAD241266
@@ -112,9 +112,9 @@ bot_msg_sguild_nv='''
 bot_msg_sguild='''
         Let's get to work! First, I need your API key (we don't store your API key in the backend). Reply back with your API key:
 
-           Ex. 
+           Ex.
                7895D172-4991-9546-CB5B-78B015B0D8A72BC0E007-4FAF-48C3-9BF1-DA1OAD241266
-           
+
 '''
 
 #Message sent to someone who is not verified and asks to set guild tags via private message.
@@ -123,13 +123,13 @@ bot_msg_gld_needs_auth='''
         Where you trying to change your guild tags? If so, please be aware you have not been verified yet! Read below to verify:
 
         Otherwise, It appears you were attempting to verify but only sent me your API key. If veryfing remember to reply with your Account Name and API key.
-        
+
    Ex.
       <Account Name> <API Key>
-      TCWarrior.5463 7895D172-4991-9546-CB5B-78B015B0D8A72BC0E007-4FAF-48C3-9BF1-DA1OAD241266        
+      TCWarrior.5463 7895D172-4991-9546-CB5B-78B015B0D8A72BC0E007-4FAF-48C3-9BF1-DA1OAD241266
 '''
 
-#Base Message sent to someone who gave us the API key to pull guild tags. 
+#Base Message sent to someone who gave us the API key to pull guild tags.
 bot_msg_gld_list='''
   API Authentication succedded. Session built. Here are your guild TAGS your can choose to assign:
 '''
@@ -140,16 +140,13 @@ bot_msg_rcv_default='''
     account name with API key in the format: <Account Name> <API Key>
 
     Example:
-     
+
       TCWarrior.5463 7895D172-4991-9546-CB5B-78B015B0D8A72BC0E007-4FAF-48C3-9BF1-DA1OAD241266
-    
+
 '''
 
 
 #######################################
-
-
-
 
 
 
@@ -177,13 +174,13 @@ class Bot:
                         if group.get('name') == group_to_find:
                                 self.vgrp_id=group.get('sgid')
 
-       
+
         def clientNeedsVerify(self,client_id):
                 client_db_id = ts3conn.clientinfo(clid=client_id)[0].get('client_database_id')
                 if any(perm_grp.get('name') == verified_group for perm_grp in ts3conn.servergroupsbyclientid(cldbid=client_db_id)):
                         return False #User already verified
                 return True #User not verified
-        
+
         def setPermissions(self,client_id):
                 client_db_id = ts3conn.clientinfo(clid=client_id)[0].get('client_database_id')
                 if DEBUG:
@@ -198,18 +195,18 @@ class Bot:
                 client_db_id = ts3conn.clientinfo(clid=client_id)[0].get('client_database_id')
                 if DEBUG:
                         TS3Auth.log("Adding Permissions:  SGID: %s   CLDBID: %s" %(self.vgrp_id,client_db_id))
-                        
+
                 #Remove user from group
                 try:
                         ts3conn.servergroupdelclient(sgid=self.vgrp_id,cldbid=client_db_id)
                 except:
                         TS3Auth.log("Unable to add client to '%s' group. Does the group exist?" %verified_group)
-                        
+
         def setGuildTags(self,client_id):
                 for i in ts3conn.clientinfo(clid=client_id):
                         print(i)#TODO: Finish setting guild tags, command disabled globaly for now...
 
-        def getUserDatabase(self):            
+        def getUserDatabase(self):
                 if os.path.isfile(self.db_name):
                         self.db_conn = sqlite3.connect(self.db_name,check_same_thread=False,detect_types=sqlite3.PARSE_DECLTYPES)
                         self.db_cursor = self.db_conn.cursor()
@@ -227,15 +224,15 @@ class Bot:
                         self.db_cursor.execute('INSERT INTO bot_info (last_succesful_audit) VALUES (?)', (datetime.date.today(),))
                         self.db_conn.commit()
 
-                
+
         def TsClientLimitReached(self,gw_acct_name):
             limit_reached=False
-            
+
             client_exists=self.db_cursor.execute("SELECT EXISTS(SELECT 1 FROM users WHERE account_name=?)",  (gw_acct_name,)).fetchone()
             if client_exists[0] >= client_restriction_limit:
                     limit_reached = True
             return limit_reached
-            
+
         def addUserToDB(self,client_db_id,account_name,api_key,created_date,last_audit_date):
             client_exists=self.db_cursor.execute("SELECT EXISTS(SELECT * FROM users WHERE ts_db_id=?)",  (client_db_id,)).fetchone()
             if client_exists[0] != 0: # If client Ts id is not already in DB
@@ -243,8 +240,8 @@ class Bot:
                 return
             self.db_cursor.execute("INSERT INTO users ( ts_db_id, account_name, api_key, created_date, last_audit_date) VALUES(?,?,?,?,?)",(client_db_id, account_name, api_key, created_date, last_audit_date))
             self.db_conn.commit()
-            
-            
+
+
         def removeUserFromDB(self,client_db_id):
             self.db_cursor.execute("DELETE FROM users WHERE ts_db_id=?", (client_db_id))
             self.db_conn.commit()
@@ -253,7 +250,7 @@ class Bot:
             self.c_audit_date=datetime.date.today() #Update current date everytime run
             self.db_audit_list=self.db_cursor.execute('SELECT * FROM users').fetchall()
             for audit_user in self.db_audit_list:
-                
+
                 #Convert to single variables
                 audit_ts_id = audit_user[0]
                 audit_account_name = audit_user[1]
@@ -266,7 +263,7 @@ class Bot:
                         print("TODAY |%s|  LAST AUDIT |%s|" %(self.c_audit_date,audit_last_audit_date + datetime.timedelta(days=audit_period)))
 
                 #compare audit date
-                
+
                 if self.c_audit_date >= audit_last_audit_date + datetime.timedelta(days=audit_period):
                     TS3Auth.log ("User %s is due for audting!" %audit_account_name)
                     auth=TS3Auth.auth_request(audit_api_key,audit_account_name)
@@ -282,7 +279,7 @@ class Bot:
             self.db_cursor.execute('INSERT INTO bot_info (last_succesful_audit) VALUES (?)', (self.c_audit_date,))
             self.db_conn.commit()
 
-        
+
 
 #######################################
 
@@ -301,9 +298,9 @@ def commandCheck(command_string):
             if re.match('(^%s)\s*' %allowed_cmd,command_string):
                 action=allowed_cmd
 
-        return action       
-                
-        
+        return action
+
+
 
 # Handler that is used every time an event (message) is received from teamspeak server
 def my_event_handler(sender, event):
@@ -319,8 +316,8 @@ def my_event_handler(sender, event):
                 print("  event.event:", event.event)
                 print("  event.parsed:", event.parsed)
                 print("\n\n")
-                
-        
+
+
         raw_cmd=event.parsed[0].get('msg')
         rec_from_name=event.parsed[0].get('invokername')
         rec_from_id=event.parsed[0].get('invokerid')
@@ -338,7 +335,7 @@ def my_event_handler(sender, event):
                         else:
                                 TS3Auth.log("Verify Request Recieved from user '%s'. Already verified, notified user." %rec_from_name)
                                 sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_alrdy_verified)
-                                
+
                 elif cmd == 'setguild':
                         if BOT.clientNeedsVerify(rec_from_id):
                                 TS3Auth.log("Received Guild Set request from '%s' but user is not verified. Sending PM requesting to verify first." %rec_from_name)
@@ -368,7 +365,7 @@ def my_event_handler(sender, event):
                                     TS3Auth.log('Name: |%s| API: |%s|' %(uname,uapi))
                             if auth.success:
                                     TS3Auth.log("Setting permissions for %s as verified." %rec_from_name)
-                                    
+
                                     #set permissions
                                     BOT.setPermissions(rec_from_id)
 
@@ -389,10 +386,10 @@ def my_event_handler(sender, event):
                     else:
                         # client limit is set and hit
                         sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_limit_Hit)
-                        TS3Auth.log("Received API Auth from %s, but %s has reached the client limit." %(rec_from_name,rec_from_name))                       
+                        TS3Auth.log("Received API Auth from %s, but %s has reached the client limit." %(rec_from_name,rec_from_name))
 
 
-            #Command for setguild tags               
+            #Command for setguild tags
             elif re.match(reg_guild_auth,raw_cmd):
                     if BOT.clientNeedsVerify(rec_from_id):
                             TS3Auth.log("Received Guild Auth from %s, but %s isn't verified. Notified user as such." %(rec_from_name,rec_from_name))
@@ -406,7 +403,7 @@ def my_event_handler(sender, event):
             elif rec_from_name != BOT.nickname:
                 sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_rcv_default)
                 TS3Auth.log("Received bad response from %s [msg= %s]" %(rec_from_name,raw_cmd))
-    
+
         return None
 
 #######################################
@@ -431,7 +428,7 @@ while bot_loop_forever:
                         exit(1)
                     #Force connection to stay up by sending an alive message every 250 seconds
                     ts3conn.keepalive(interval=250)
-                    
+
                     #Choose which server instance we want to join (unless multiple exist the default of 1 should be fine)
                     ts3conn.use(sid=server_id)
 
@@ -441,9 +438,9 @@ while bot_loop_forever:
                     TS3Auth.log ("BOT loaded into server (%s) as %s (%s). Nickname '%s'" %(server_id,BOT.name,BOT.client_id,BOT.nickname))
                     ts3conn.clientupdate(client_nickname=BOT.nickname)
 
-                    #Start our event handler (received the messages from server)    
+                    #Start our event handler (received the messages from server)
                     ts3conn.on_event.connect(my_event_handler)
-                    
+
                     # Find the verify channel
                     verify_channel_id=0
                     while verify_channel_id == 0:
@@ -454,13 +451,13 @@ while bot_loop_forever:
                             except:
                                 TS3Auth.log ("Unable to locate channel with name '%s'. Sleeping for 10 seconds..." %(channel_name))
                                 time.sleep(10)
-                        
-                                
+
+
                     # Move ourselves to the Verify chanel and register for text events
                     ts3conn.clientmove(clid=BOT.client_id,cid=verify_channel_id)
                     ts3conn.servernotifyregister(event="textchannel") #alert channel chat
                     ts3conn.servernotifyregister(event="textprivate") #alert Private chat
-                    
+
                     TS3Auth.log ("BOT has joined channel '%s' (%s)." %(channel_name,verify_channel_id))
 
                     #Start looking for any received events from the server
@@ -474,30 +471,26 @@ while bot_loop_forever:
                     TS3Auth.log("BOT Database Audit policies initiating.")
                     # Always audit users on initialize if user audit date is up (in case the script is reloaded several times before audit interval hits, so we can ensure we maintain user database accurately)
                     BOT.auditUsers()
-                    
+
                     #Set audit schedule job to run in X days
                     schedule.every(audit_interval).days.do(BOT.auditUsers)
-                    
-                    
+
+
                     #Forces script to loop forever while we wait for events to come in, unless connection timed out. Then it should loop a new bot into creation.
                     TS3Auth.log("BOT now idle, waiting for requests.")
                     while ts3conn.is_connected():
-                        
-                       
-                        #auditjob  check, 
+
+
+                        #auditjob  check,
                         schedule.run_pending()
                         time.sleep(bot_sleep_idle)
-                        
+
                 TS3Auth.log("It appears the BOT has lost connection to teamspeak. Trying to restart connection in %s seconds...." %bot_sleep_conn_lost)
                 time.sleep(bot_sleep_conn_lost)
-                
+
         except ConnectionRefusedError:
                 TS3Auth.log("Unable to reach teamspeak server..trying again in %s seconds..." %bot_sleep_conn_lost)
                 time.sleep(bot_sleep_conn_lost)
-                
-                
+
 
 #######################################
-
-
-                

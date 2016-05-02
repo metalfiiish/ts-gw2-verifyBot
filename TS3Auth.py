@@ -25,7 +25,7 @@ h_char_chk = '[CharacterCheck]'
 
 def log(msg,silent=False):
     if not silent:
-        print (msg)    
+        print (msg)
     with open(log_file,"a") as logger:
         new_log = "%s %s\n" %(str(datetime.now()),msg)
         logger.write(new_log)
@@ -58,12 +58,12 @@ class auth_request:
 
             except:
                 log('%s %s Possibly bad API Key. Error obtaining account details for %s. (Does the API key allow "account" queries?)' %(h_hdr,h_acct,self.user))
-                
+
         except:
                 log('%s %s Unable to load character data for %s. Bad API key or API key is not set to allow "character" queries.' %(h_hdr,h_char,self.user))
-                    
-        
-        
+
+
+
 
     def getAccountDetails(self):
         gw2api.v2.account.set_token(self.key)
@@ -91,7 +91,7 @@ class auth_request:
         for guild_id in self.guilds:
             self.guild_tags.append(gw2api.guild_details(guild_id).get('tag'))
 
-                
+
 
     def authCheck(self):
         log("%s %s Running auth check for %s" %(h_hdr,h_auth,self.name))
@@ -101,13 +101,13 @@ class auth_request:
         if self.user == self.name and users_server == required_server:
 
             #Check if player has at least one level 80 character
-            if self.char_check:         
+            if self.char_check:
                 self.success = True
                 log("%s %s Auth Success for user %s." %(h_hdr,h_auth,self.user))
 
             else:
                 log("%s %s User %s is on the correct server but does not have any level %s characters." %(h_hdr,h_auth,self.user,self.required_level))
-                
+
         else:
             log("%s %s Authentication Failed with:\n\n    User Gave:\n        ~USER ID: %s\n          ~Server: %s\n\n     Expected:\n         ~USER ID: %s\n          ~Server: %s\n\n" %(h_hdr,h_auth,self.user,users_server,self.name,required_server))
         return self.success
@@ -119,8 +119,3 @@ class auth_request:
                 self.char_check=True
                 log("%s %s User %s has at least 1 level %s character." %(h_hdr,h_char_chk,self.user,self.required_level))
                 return
-            
-        
-
-
- 
