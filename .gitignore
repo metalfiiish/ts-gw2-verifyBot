@@ -46,3 +46,9 @@ Network Trash Folder
 Temporary Items
 .apdisk
 __pycache__
+
+# Logs
+*.log
+
+# Databases
+*.db
