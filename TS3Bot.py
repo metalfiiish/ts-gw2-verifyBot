@@ -69,21 +69,21 @@ bot_msg_verify='''
       TCWarrior.5463 7895D172-4991-9546-CB5B-78B015B0D8A72BC0E007-4FAF-48C3-9BF1-DA1OAD241266
 
 
-   NOTE: Guild Wars 2 API keys can be created/deleted via [url=https://account.arena.net/login?redirect_uri=%2Fapplications]ArenaNet site[/url].
+   NOTE: Guild Wars 2 API keys can be created/deleted via ArenaNet site "https://account.arena.net/login?redirect_uri=%2Fapplications".
 
 '''
 
 #Message sent for sucesful verification
 bot_msg_success='''
-  Authentication was succesful! Thank you fellow %s Adventurer. Have fun \(^.^)/
-''' %TS3Auth.required_server
+  Authentication was succesful! Thank you fellow Adventurer. Have fun \(^.^)/
+''' 
 
 #Message sent for failed verification
 bot_msg_fail='''
   Unfortantely your authentication failed. Ask the Teamspeak admin to review the logs.
      ~ Likely a bad API key or incorrect API settings. ( API Key needs access to 'account' and 'character' )
 
-NOTE: Guild Wars 2 API keys permission can be viewed via [url=https://account.arena.net/login?redirect_uri=%2Fapplications]ArenaNet site[/url].
+NOTE: Guild Wars 2 API keys permission can be viewed via ArenaNet site "https://account.arena.net/login?redirect_uri=%2Fapplications".
 '''
 
 #Message sent for client TS ID limit reached (trying to access Teamspeack from a second computer after having authenticated on a prior machine
@@ -230,15 +230,16 @@ class Bot:
 
             client_exists=self.db_cursor.execute("SELECT EXISTS(SELECT 1 FROM users WHERE account_name=?)",  (gw_acct_name,)).fetchone()
             if client_exists[0] >= client_restriction_limit:
-                    limit_reached = True
+                limit_reached = True
             return limit_reached
 
         def addUserToDB(self,client_db_id,account_name,api_key,created_date,last_audit_date):
             client_exists=self.db_cursor.execute("SELECT EXISTS(SELECT * FROM users WHERE ts_db_id=?)",  (client_db_id,)).fetchone()
             if client_exists[0] != 0: # If client Ts id is not already in DB
-                TS3Auth.log("Unable to add user %s with Teamspeak ID %s to Database because it already exists. (Ignore, likely permissions changed by a Teamspeak Admin)" %(account_name,client_db_id))
-                return
-            self.db_cursor.execute("INSERT INTO users ( ts_db_id, account_name, api_key, created_date, last_audit_date) VALUES(?,?,?,?,?)",(client_db_id, account_name, api_key, created_date, last_audit_date))
+                self.db_cursor.execute("""UPDATE users SET ts_db_id=?, account_name=?, api_key=?, created_date=?, last_audit_date=?""", (client_db_id, account_name, api_key, created_date, last_audit_date))
+                TS3Auth.log("Teamspeak ID %s already in Database updating with new Account Name '%s'. (likely permissions changed by a Teamspeak Admin)" %(client_db_id,account_name))
+            else:
+                self.db_cursor.execute("INSERT INTO users ( ts_db_id, account_name, api_key, created_date, last_audit_date) VALUES(?,?,?,?,?)",(client_db_id, account_name, api_key, created_date, last_audit_date))
             self.db_conn.commit()
 
 
@@ -424,7 +425,7 @@ while bot_loop_forever:
                         ts3conn.login(client_login_name=user,client_login_password=passwd)
 
                     except ts3.query.TS3QueryError as err:
-                        TS3Auth.log("Login Failed:", err.resp.error["msg"])
+                        TS3Auth.log("Login Failed Reason: %s" %err.resp.error["msg"])
                         exit(1)
                     #Force connection to stay up by sending an alive message every 250 seconds
                     ts3conn.keepalive(interval=250)
@@ -454,11 +455,16 @@ while bot_loop_forever:
 
 
                     # Move ourselves to the Verify chanel and register for text events
-                    ts3conn.clientmove(clid=BOT.client_id,cid=verify_channel_id)
+                    try:
+                            ts3conn.clientmove(clid=BOT.client_id,cid=verify_channel_id)
+                            TS3Auth.log ("BOT has joined channel '%s' (%s)." %(channel_name,verify_channel_id))
+                    except ts3.query.TS3QueryError as chnl_err: #BOT move failed because
+                            TS3Auth.log("BOT Attempted to join channel '%s' (%s) WARN: %s" %(channel_name,verify_channel_id,chnl_err.resp.error["msg"]))
+                            
                     ts3conn.servernotifyregister(event="textchannel") #alert channel chat
                     ts3conn.servernotifyregister(event="textprivate") #alert Private chat
 
-                    TS3Auth.log ("BOT has joined channel '%s' (%s)." %(channel_name,verify_channel_id))
+                    
 
                     #Start looking for any received events from the server
                     ts3conn.recv_in_thread()

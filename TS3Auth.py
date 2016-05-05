@@ -1,13 +1,14 @@
 import gw2api.v2
 from datetime import datetime
 import configparser
+import ast
 
 auth_configs=configparser.ConfigParser()
 auth_configs.read('bot.conf')
 
 
 
-required_server = auth_configs.get('auth settings','required_server')
+required_servers = ast.literal_eval(auth_configs.get('auth settings','required_servers')) # expects a pythonic list, Ex. ['Tarnished Coast','Kaineng']
 required_level = auth_configs.get('auth settings','required_level')
 
 log_file = 'TS3Auth.log'
@@ -37,30 +38,38 @@ class auth_request:
     def __init__(self,api_key,user_id=''): #User ID left at None for queries that don't require authentication. If left at None the 'success' will always fail due to self.authCheck().
         self.key = api_key
         self.user = user_id
-        self.success = False # Used to verify is user is on our server
+        self.success = False # Used to verify if user is on our server
         self.char_check = False # Used to verify is any character is at least 80
         self.required_level=int(required_level)
-        self.required_server=required_server
+        self.required_servers=required_servers
+        
+        self.pushCharacterAuth()
+        self.pushAccountAuth()
 
-
+    def pushCharacterAuth(self):
+        if self.required_level == 0: # if level is set to 0 bypass character API request (in case GW2 Character API breaks again like in April 2016.)
+            self.char_check=True
+            return 
         try:
             log('%s %s Attempting to load character data for %s.' %(h_hdr,h_char,self.user))
             gw2api.v2.characters.set_token(self.key)
             self.char_dump=gw2api.v2.characters.page(page=0)
             log('%s %s Character data loaded for %s.' %(h_hdr,h_char,self.user))
             self.charCheck()
-
-
-            try:
-                self.getAccountDetails()
-                log("%s %s Account loaded for %s" %(h_hdr,h_acct,self.user))
-                self.authCheck()
-
-            except:
-                log('%s %s Possibly bad API Key. Error obtaining account details for %s. (Does the API key allow "account" queries?)' %(h_hdr,h_acct,self.user))
-
+	    
         except:
                 log('%s %s Unable to load character data for %s. Bad API key or API key is not set to allow "character" queries.' %(h_hdr,h_char,self.user))
+		
+    def pushAccountAuth(self):
+        try:
+            self.getAccountDetails()
+            log("%s %s Account loaded for %s" %(h_hdr,h_acct,self.user))
+            self.authCheck()
+
+        except:
+            log('%s %s Possibly bad API Key. Error obtaining account details for %s. (Does the API key allow "account" queries?)' %(h_hdr,h_acct,self.user))
+
+
 
 
 
@@ -98,9 +107,9 @@ class auth_request:
         users_server = self.world.get('name')
 
         #Check if account name given is correct AND if they are on the required server
-        if self.user == self.name and users_server == required_server:
+        if self.user == self.name and users_server in required_servers:
 
-            #Check if player has at least one level 80 character
+            #Check if player has met character requirements
             if self.char_check:
                 self.success = True
                 log("%s %s Auth Success for user %s." %(h_hdr,h_auth,self.user))
