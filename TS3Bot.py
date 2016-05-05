@@ -140,7 +140,7 @@ class Bot:
         def addUserToDB(self,client_db_id,account_name,api_key,created_date,last_audit_date):
             client_exists=self.db_cursor.execute("SELECT EXISTS(SELECT * FROM users WHERE ts_db_id=?)",  (client_db_id,)).fetchone()
             if client_exists[0] != 0: # If client Ts id is not already in DB
-                self.db_cursor.execute("""UPDATE users SET ts_db_id=?, account_name=?, api_key=?, created_date=?, last_audit_date=?""", (client_db_id, account_name, api_key, created_date, last_audit_date))
+                self.db_cursor.execute("""UPDATE users SET ts_db_id=?, account_name=?, api_key=?, created_date=?, last_audit_date=? WHERE ts_db_id=?""", (client_db_id, account_name, api_key, created_date, last_audit_date,client_db_id))
                 TS3Auth.log("Teamspeak ID %s already in Database updating with new Account Name '%s'. (likely permissions changed by a Teamspeak Admin)" %(client_db_id,account_name))
             else:
                 self.db_cursor.execute("INSERT INTO users ( ts_db_id, account_name, api_key, created_date, last_audit_date) VALUES(?,?,?,?,?)",(client_db_id, account_name, api_key, created_date, last_audit_date))
