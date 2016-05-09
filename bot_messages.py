@@ -14,21 +14,21 @@ bot_msg_verify='''
       TCWarrior.5463 7895D172-4991-9546-CB5B-78B015B0D8A72BC0E007-4FAF-48C3-9BF1-DA1OAD241266
 
 
-   NOTE: Guild Wars 2 API keys can be created/deleted via ArenaNet site "https://account.arena.net/login?redirect_uri=%2Fapplications".
+   NOTE: Guild Wars 2 API keys can be created/deleted via [url=https://account.arena.net/login?redirect_uri=%2Fapplications]ArenaNet site[/url].
 
 '''
 
 #Message sent for sucesful verification
 bot_msg_success='''
   Authentication was succesful! Thank you fellow Adventurer. Have fun \(^.^)/
-''' 
+'''
 
 #Message sent for failed verification
 bot_msg_fail='''
   Unfortantely your authentication failed. Ask the Teamspeak admin to review the logs.
      ~ Likely a bad API key or incorrect API settings. ( API Key needs access to 'account' and 'character' )
 
-NOTE: Guild Wars 2 API keys permission can be viewed via ArenaNet site "https://account.arena.net/login?redirect_uri=%2Fapplications".
+NOTE: Guild Wars 2 API keys permission can be viewed via [url=https://account.arena.net/login?redirect_uri=%2Fapplications]ArenaNet site[/url].
 '''
 
 #Message sent for client TS ID limit reached (trying to access Teamspeack from a second computer after having authenticated on a prior machine
