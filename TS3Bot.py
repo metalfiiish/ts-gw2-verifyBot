@@ -13,6 +13,7 @@ import ast
 import schedule  # Allows auditing of users every X days
 from bot_messages import *  # Import all Static messages the BOT may need
 
+
 #######################################
 # Load Configs
 #######################################
@@ -286,7 +287,7 @@ def my_event_handler(sender, event):
 
     # Type 1 means it was a private message
     elif rec_type == '1':
-        reg_api_auth = '\s*(\S+\.\d+)\s+(.*?-.*?-.*?-.*?-.*)\s*$'
+        reg_api_auth = '\s*(\S+\s*\S+\.\d+)\s+(.*?-.*?-.*?-.*?-.*)\s*$'
         reg_guild_auth = '\s*(.*?-.*?-.*?-.*?-.*)\s*$'
 
         # Command for verifying authentication
@@ -294,6 +295,7 @@ def my_event_handler(sender, event):
             pair = re.search(reg_api_auth, raw_cmd)
             uname = pair.group(1)
             uapi = pair.group(2)
+
             limit_hit = BOT.TsClientLimitReached(uname)
             if DEBUG:
                 print("Limit hit check: %s" % limit_hit)
