@@ -288,7 +288,7 @@ def my_event_handler(sender, event):
 
     # Type 1 means it was a private message
     elif rec_type == '1':
-        reg_api_auth = '\s*(\S+\s*\S+\s*\S+\s*\S+\s*\S+\s*\S+\.\d+)\s+(.*?-.*?-.*?-.*?-.*)\s*$'
+        reg_api_auth = '\s*(.+?\.\d+)\s+(.*?-.*?-.*?-.*?-.*)\s*$'
         reg_guild_auth = '\s*(.*?-.*?-.*?-.*?-.*)\s*$'
 
         # Command for verifying authentication
