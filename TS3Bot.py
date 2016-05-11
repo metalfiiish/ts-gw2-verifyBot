@@ -10,7 +10,7 @@ import configparser #parse in configuration
 import ast #eval a string to a list/boolean (for cmd_list from 'bot settings' or DEBUG from config)
 import schedule # Allows auditing of users every X days
 from bot_messages import * #Import all Static messages the BOT may need
-
+import unicodedata
 #######################################
 #### Load Configs
 #######################################
@@ -225,6 +225,7 @@ def my_event_handler(sender, event):
 
         raw_cmd=event.parsed[0].get('msg')
         rec_from_name=event.parsed[0].get('invokername')
+        rec_from_name=rec_from_name.encode('utf-8')#fix any encoding issues
         rec_from_id=event.parsed[0].get('invokerid')
         rec_type=event.parsed[0].get('targetmode')
 
@@ -251,7 +252,7 @@ def my_event_handler(sender, event):
 
         # Type 1 means it was a private message
         elif rec_type == '1':
-            reg_api_auth='\s*(\S+\.\d+)\s+(.*?-.*?-.*?-.*?-.*)\s*$'
+            reg_api_auth='\s*(\S+\s*\S+\.\d+)\s+(.*?-.*?-.*?-.*?-.*)\s*$'
             reg_guild_auth='\s*(.*?-.*?-.*?-.*?-.*)\s*$'
 
             #Command for verifying authentication
@@ -305,7 +306,7 @@ def my_event_handler(sender, event):
                             self.user_sessions.append()
                             sender.sendtextmessage( targetmode=1, target=rec_from_id, msg='%s\n%s\n\n' %(bot_msg_gld_list,auth.guild_tags))
 
-            elif rec_from_name != BOT.nickname:
+            elif rec_from_name != BOT.nickname.encode('utf-8'): #Had to encode bot nickname to match the encoded rec_from_name for a proper one to one match, otherwise the bot messages itself to oblivion.. reading it's own message
                 sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_rcv_default)
                 TS3Auth.log("Received bad response from %s [msg= %s]" %(rec_from_name,raw_cmd))
 
