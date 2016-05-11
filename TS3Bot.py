@@ -251,6 +251,7 @@ def my_event_handler(sender, event):
 
     raw_cmd = event.parsed[0].get('msg')
     rec_from_name = event.parsed[0].get('invokername')
+    rec_from_name=rec_from_name.encode('utf-8')
     rec_from_id = event.parsed[0].get('invokerid')
     rec_type = event.parsed[0].get('targetmode')
 
@@ -287,7 +288,7 @@ def my_event_handler(sender, event):
 
     # Type 1 means it was a private message
     elif rec_type == '1':
-        reg_api_auth = '\s*(\S+\s*\S+\.\d+)\s+(.*?-.*?-.*?-.*?-.*)\s*$'
+        reg_api_auth = '\s*(\S+\s*\S+\s*\S+\s*\S+\s*\S+\s*\S+\.\d+)\s+(.*?-.*?-.*?-.*?-.*)\s*$'
         reg_guild_auth = '\s*(.*?-.*?-.*?-.*?-.*)\s*$'
 
         # Command for verifying authentication
@@ -356,7 +357,9 @@ def my_event_handler(sender, event):
                 sender.sendtextmessage(targetmode=1, target=rec_from_id, msg='%s\n%s\n\n' % (
                     bot_msg_gld_list, auth.guild_tags))
 
-        elif rec_from_name != BOT.nickname:
+        #Had to encode bot nickname to match the encoded rec_from_name for a
+        # proper one to one match, otherwise the bot messages itself to oblivion.. reading it's own message
+        elif rec_from_name != BOT.nickname.encode('utf-8'):
             sender.sendtextmessage(
                 targetmode=1, target=rec_from_id, msg=bot_msg_rcv_default)
             TS3Auth.log("Received bad response from %s [msg= %s]" % (
