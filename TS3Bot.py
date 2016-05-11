@@ -10,7 +10,7 @@ import configparser #parse in configuration
 import ast #eval a string to a list/boolean (for cmd_list from 'bot settings' or DEBUG from config)
 import schedule # Allows auditing of users every X days
 from bot_messages import * #Import all Static messages the BOT may need
-import unicodedata
+
 #######################################
 #### Load Configs
 #######################################
