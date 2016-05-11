@@ -18,6 +18,11 @@ bot_msg_verify='''
 
 '''
 
+# Broadcast message
+bot_msg_broadcast='''
+ Hello there! You can begin verification by typing 'verifyme' in this channel.
+'''
+
 #Message sent for sucesful verification
 bot_msg_success='''
   Authentication was succesful! Thank you fellow Adventurer. Have fun \(^.^)/

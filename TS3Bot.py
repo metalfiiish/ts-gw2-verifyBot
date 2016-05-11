@@ -42,6 +42,7 @@ db_file_name = configs.get('bot settings','db_file_name')
 audit_period = int(configs.get('bot settings','audit_period')) #How long a single user can go without being audited
 audit_interval = int(configs.get('bot settings','audit_interval')) # how often the BOT audits all users
 client_restriction_limit= int(configs.get('bot settings','client_restriction_limit'))
+timer_msg_broadcast = int(configs.get('bot settings','broadcast_message_timer'))
 
 # Debugging (on or off) True/False
 DEBUG = ast.literal_eval(configs.get('DEBUGGING','DEBUG'))
@@ -60,8 +61,10 @@ bot_msg='''
 
 class Bot:
 
-        def __init__(self,admin_data,db):
+        def __init__(self,db,ts_connection):
+                admin_data=ts_connection.whoami()
                 self.db_name=db
+                self.ts_connection=ts_connection
                 self.name=admin_data[0].get('client_login_name')
                 self.client_id=admin_data[0].get('client_id')
                 self.nickname=bot_nickname
@@ -184,7 +187,8 @@ class Bot:
             self.db_cursor.execute('INSERT INTO bot_info (last_succesful_audit) VALUES (?)', (self.c_audit_date,))
             self.db_conn.commit()
 
-
+        def broadcastMessage(self):
+            self.ts_connection.sendtextmessage( targetmode=2,target=server_id, msg=bot_msg_broadcast)
 
 #######################################
 
@@ -341,12 +345,12 @@ while bot_loop_forever:
 
 
                     #Define our bots info
-                    BOT=Bot(ts3conn.whoami(),db_file_name)
+                    BOT=Bot(db_file_name,ts3conn)
                     TS3Auth.log ("BOT loaded into server (%s) as %s (%s). Nickname '%s'" %(server_id,BOT.name,BOT.client_id,BOT.nickname))
                     ts3conn.clientupdate(client_nickname=BOT.nickname)
 
                     #Start our event handler (received the messages from server)
-                    ts3conn.on_event.connect(my_event_handler)
+                    BOT.ts_connection.on_event.connect(my_event_handler)
 
                     # Find the verify channel
                     verify_channel_id=0
@@ -362,21 +366,21 @@ while bot_loop_forever:
 
                     # Move ourselves to the Verify chanel and register for text events
                     try:
-                            ts3conn.clientmove(clid=BOT.client_id,cid=verify_channel_id)
+                            BOT.ts_connection.clientmove(clid=BOT.client_id,cid=verify_channel_id)
                             TS3Auth.log ("BOT has joined channel '%s' (%s)." %(channel_name,verify_channel_id))
                     except ts3.query.TS3QueryError as chnl_err: #BOT move failed because
                             TS3Auth.log("BOT Attempted to join channel '%s' (%s) WARN: %s" %(channel_name,verify_channel_id,chnl_err.resp.error["msg"]))
                             
-                    ts3conn.servernotifyregister(event="textchannel") #alert channel chat
-                    ts3conn.servernotifyregister(event="textprivate") #alert Private chat
+                    BOT.ts_connection.servernotifyregister(event="textchannel") #alert channel chat
+                    BOT.ts_connection.servernotifyregister(event="textprivate") #alert Private chat
 
                     
 
                     #Start looking for any received events from the server
-                    ts3conn.recv_in_thread()
+                    BOT.ts_connection.recv_in_thread()
 
                     #Send message to the server that the BOT is up
-                    ts3conn.sendtextmessage( targetmode=3,target=server_id, msg=bot_msg)
+                    BOT.ts_connection.sendtextmessage( targetmode=3,target=server_id, msg=bot_msg)
                     TS3Auth.log("BOT is now registered to receive messages!")
 
 
@@ -387,10 +391,15 @@ while bot_loop_forever:
                     #Set audit schedule job to run in X days
                     schedule.every(audit_interval).days.do(BOT.auditUsers)
 
+                    #Set schedule to advertise broadcast message in channel
+                    if timer_msg_broadcast > 0:
+                            schedule.every(timer_msg_broadcast).seconds.do(BOT.broadcastMessage)
+                    BOT.broadcastMessage() # Send initial message into channel
+
 
                     #Forces script to loop forever while we wait for events to come in, unless connection timed out. Then it should loop a new bot into creation.
                     TS3Auth.log("BOT now idle, waiting for requests.")
-                    while ts3conn.is_connected():
+                    while BOT.ts_connection.is_connected():
 
 
                         #auditjob  check,
