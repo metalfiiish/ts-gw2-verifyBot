@@ -313,7 +313,7 @@ def my_event_handler(sender, event):
 
             elif rec_from_name != BOT.nickname.encode('utf-8'): #Had to encode bot nickname to match the encoded rec_from_name for a proper one to one match, otherwise the bot messages itself to oblivion.. reading it's own message
                 sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_rcv_default)
-                TS3Auth.log("Received bad response from %s [msg= %s]" %(rec_from_name,raw_cmd))
+                TS3Auth.log("Received bad response from %s [msg= %s]" %(rec_from_name,raw_cmd.encode('utf-8')))
 
         return None
 
