@@ -10,20 +10,7 @@ The guild wars authentication uses the API keys from user's accounts. It also re
 
 # REQUIREMENTS in 'requirements.txt'
 
-
-NOTE: gw2api module by author 'hackedd' is clean and simple but for some reason one line of code was throwing the v2/endpoint.py off in Python 3.4 (was fine in 2.7). However, I had to use 3.4 so I tweaked his code as follows:
-
-RECOMENDED: You can use the gw2api that was forked to fix this bug, mentioned in requirements.txt
-
-OTHERWISE:
-File: v2/endpoint.py
-
-Original:
-for key, link in r.links.iteritems():
-
-Fixed:
-for key, link in r.links.items():
-
+NOTE: gw2api module by author 'hackedd' has been patched for Python3 now so you can pull the main gw2api repo instead of the forked one. 
 
 
 Please modify the bot.conf variables as needed.
