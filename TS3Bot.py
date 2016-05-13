@@ -176,11 +176,11 @@ class Bot:
                     TS3Auth.log ("User %s is due for audting!" %audit_account_name)
                     auth=TS3Auth.auth_request(audit_api_key,audit_account_name)
                     if auth.success:
-                            TS3Auth.log("User %s is still on %s. Succesful audit!" %(audit_account_name,auth.required_server))
+                            TS3Auth.log("User %s is still on %s. Succesful audit!" %(audit_account_name,auth.world.get('name')))
                             self.db_cursor.execute("UPDATE users SET last_audit_date = ? WHERE ts_db_id= ?", (self.c_audit_date,audit_ts_id,))
                             self.db_conn.commit()
                     else:
-                            TS3Auth.log("User %s is no longer on %s. Removing access...." %(audit_account_name,auth.required_server))
+                            TS3Auth.log("User %s is no longer on %s. Removing access...." %(audit_account_name,auth.world.get('name')))
                             self.db_cursor.execute("DELETE FROM users WHERE ts_db_id= ?", (audit_ts_id))
                             self.db_conn.commit()
                             self.removePermissions(audit_ts_id)
