@@ -299,18 +299,6 @@ def my_event_handler(sender, event):
                         sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_limit_Hit)
                         TS3Auth.log("Received API Auth from %s, but %s has reached the client limit." %(rec_from_name,rec_from_name))
 
-
-            #Command for setguild tags
-            elif re.match(reg_guild_auth,raw_cmd):
-                    if BOT.clientNeedsVerify(rec_from_id):
-                            TS3Auth.log("Received Guild Auth from %s, but %s isn't verified. Notified user as such." %(rec_from_name,rec_from_name))
-                            sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_gld_needs_auth)
-                    else:
-                            TS3Auth.log("Received Guild Auth from %s. Sending contents to user for selection." %(rec_from_name))
-                            auth=TS3Auth.auth_request(re.search(reg_guild_auth,raw_cmd).group(1).strip(),)
-                            self.user_sessions.append()
-                            sender.sendtextmessage( targetmode=1, target=rec_from_id, msg='%s\n%s\n\n' %(bot_msg_gld_list,auth.guild_tags))
-
             elif rec_from_name != BOT.nickname.encode('utf-8'): #Had to encode bot nickname to match the encoded rec_from_name for a proper one to one match, otherwise the bot messages itself to oblivion.. reading it's own message
                 sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_rcv_default)
                 TS3Auth.log("Received bad response from %s [msg= %s]" %(rec_from_name,raw_cmd.encode('utf-8')))
