@@ -180,7 +180,7 @@ class Bot:
                             self.db_cursor.execute("UPDATE users SET last_audit_date = ? WHERE ts_db_id= ?", (self.c_audit_date,audit_ts_id,))
                             self.db_conn.commit()
                     else:
-                            TS3Auth.log("User %s is no longer on %s. Removing access...." %(audit_account_name,auth.world.get('name')))
+                            TS3Auth.log("User %s is no longer on our server. Removing access...." %(audit_account_name))
                             self.db_cursor.execute("DELETE FROM users WHERE ts_db_id= ?", (audit_ts_id))
                             self.db_conn.commit()
                             self.removePermissions(audit_ts_id)
@@ -228,10 +228,13 @@ def my_event_handler(sender, event):
 
 
         raw_cmd=event.parsed[0].get('msg')
-        rec_from_name=event.parsed[0].get('invokername')
-        rec_from_name=rec_from_name.encode('utf-8')#fix any encoding issues
+        rec_from_name=event.parsed[0].get('invokername').encode('utf-8') #fix any encoding issues introdcued by Teamspeak
+        rec_from_uid=event.parsed[0].get('invokeruid')
         rec_from_id=event.parsed[0].get('invokerid')
         rec_type=event.parsed[0].get('targetmode')
+
+        if rec_from_uid == 'serveradmin':
+                return #ignore any serveradmin messages, aka seeing our own messages.
 
         # Type 2 means it was channel text
         if rec_type == '2':
