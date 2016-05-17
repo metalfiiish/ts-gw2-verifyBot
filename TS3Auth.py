@@ -82,6 +82,7 @@ class auth_request:
 
         # Players World [id,name,population]
         self.world = gw2api.v2.worlds.get_one(self.details_dump.get('world'))
+        self.users_server = self.world.get('name')
 
         # Player Created Date -- May be useful to flag accounts created within past 30 days
         #self.created = self.details_dump.get('created')
@@ -104,10 +105,9 @@ class auth_request:
 
     def authCheck(self):
         log("%s %s Running auth check for %s" %(h_hdr,h_auth,self.name))
-        users_server = self.world.get('name')
 
         #Check if account name given is correct AND if they are on the required server
-        if self.user == self.name and users_server in required_servers:
+        if self.user == self.name and self.users_server in required_servers:
 
             #Check if player has met character requirements
             if self.char_check:
@@ -115,10 +115,10 @@ class auth_request:
                 log("%s %s Auth Success for user %s." %(h_hdr,h_auth,self.user))
 
             else:
-                log("%s %s User %s is on the correct server but does not have any level %s characters." %(h_hdr,h_auth,self.user,self.required_level))
+                log("%s %s User %s is on the correct server but does not have any level %s characters." %(h_hdr,h_auth,self.user,self.users_server))
 
         else:
-            log("%s %s Authentication Failed with:\n\n    User Gave:\n        ~USER ID: %s\n          ~Server: %s\n\n     Expected:\n         ~USER ID: %s\n          ~Server: %s\n\n" %(h_hdr,h_auth,self.user,users_server,self.name,required_server))
+            log("%s %s Authentication Failed with:\n\n    User Gave:\n        ~USER ID: %s\n          ~Server: %s\n\n     Expected:\n         ~USER ID: %s\n          ~Server: %s\n\n" %(h_hdr,h_auth,self.user,self.users_server,self.name,self.required_servers))
         return self.success
 
     def charCheck(self):

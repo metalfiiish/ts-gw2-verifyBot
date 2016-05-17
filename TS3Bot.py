@@ -151,7 +151,7 @@ class Bot:
 
 
         def removeUserFromDB(self,client_db_id):
-            self.db_cursor.execute("DELETE FROM users WHERE ts_db_id=?", (client_db_id))
+            self.db_cursor.execute("DELETE FROM users WHERE ts_db_id=?", (client_db_id,))
             self.db_conn.commit()
 
         def auditUsers(self):
@@ -181,8 +181,7 @@ class Bot:
                             self.db_conn.commit()
                     else:
                             TS3Auth.log("User %s is no longer on our server. Removing access...." %(audit_account_name))
-                            self.db_cursor.execute("DELETE FROM users WHERE ts_db_id= ?", (audit_ts_id))
-                            self.db_conn.commit()
+                            self.removeUserFromDB(audit_ts_id)
                             self.removePermissions(audit_ts_id)
             self.db_cursor.execute('INSERT INTO bot_info (last_succesful_audit) VALUES (?)', (self.c_audit_date,))
             self.db_conn.commit()
