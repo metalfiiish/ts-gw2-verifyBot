@@ -225,86 +225,89 @@ def my_event_handler(sender, event):
                 print("  event.parsed:", event.parsed)
                 print("\n\n")
 
+        try: # added to stop horribly bad messages from users breaking BOT
+                raw_cmd=event.parsed[0].get('msg')
+                rec_from_name=event.parsed[0].get('invokername').encode('utf-8') #fix any encoding issues introdcued by Teamspeak
+                rec_from_uid=event.parsed[0].get('invokeruid')
+                rec_from_id=event.parsed[0].get('invokerid')
+                rec_type=event.parsed[0].get('targetmode')
 
-        raw_cmd=event.parsed[0].get('msg')
-        rec_from_name=event.parsed[0].get('invokername').encode('utf-8') #fix any encoding issues introdcued by Teamspeak
-        rec_from_uid=event.parsed[0].get('invokeruid')
-        rec_from_id=event.parsed[0].get('invokerid')
-        rec_type=event.parsed[0].get('targetmode')
+                if rec_from_uid == 'serveradmin':
+                        return #ignore any serveradmin messages, aka seeing our own messages.
 
-        if rec_from_uid == 'serveradmin':
-                return #ignore any serveradmin messages, aka seeing our own messages.
+                # Type 2 means it was channel text
+                if rec_type == '2':
+                        cmd=commandCheck(raw_cmd) #sanitize the commands but also restricts commands to a list of known allowed commands
 
-        # Type 2 means it was channel text
-        if rec_type == '2':
-                cmd=commandCheck(raw_cmd) #sanitize the commands but also restricts commands to a list of known allowed commands
+                        #
+                        if cmd == 'verifyme':
+                                if BOT.clientNeedsVerify(rec_from_id):
+                                        TS3Auth.log("Verify Request Recieved from user '%s'. Sending PM now...\n        ...waiting for user response." %rec_from_name)
+                                        sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_verify)
+                                else:
+                                        TS3Auth.log("Verify Request Recieved from user '%s'. Already verified, notified user." %rec_from_name)
+                                        sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_alrdy_verified)
 
-                #
-                if cmd == 'verifyme':
-                        if BOT.clientNeedsVerify(rec_from_id):
-                                TS3Auth.log("Verify Request Recieved from user '%s'. Sending PM now...\n        ...waiting for user response." %rec_from_name)
-                                sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_verify)
-                        else:
-                                TS3Auth.log("Verify Request Recieved from user '%s'. Already verified, notified user." %rec_from_name)
-                                sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_alrdy_verified)
+                        elif cmd == 'setguild':
+                                if BOT.clientNeedsVerify(rec_from_id):
+                                        TS3Auth.log("Received Guild Set request from '%s' but user is not verified. Sending PM requesting to verify first." %rec_from_name)
+                                        sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_sguild_nv)
+                                else:
+                                        TS3Auth.log("Received Guild Set request from user '%s'. Sending PM to begin changing tags." %rec_from_name)
+                                        sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_sguild)
 
-                elif cmd == 'setguild':
-                        if BOT.clientNeedsVerify(rec_from_id):
-                                TS3Auth.log("Received Guild Set request from '%s' but user is not verified. Sending PM requesting to verify first." %rec_from_name)
-                                sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_sguild_nv)
-                        else:
-                                TS3Auth.log("Received Guild Set request from user '%s'. Sending PM to begin changing tags." %rec_from_name)
-                                sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_sguild)
+                # Type 1 means it was a private message
+                elif rec_type == '1':
+                    #reg_api_auth='\s*(\S+\s*\S+\.\d+)\s+(.*?-.*?-.*?-.*?-.*)\s*$'
+                    reg_api_auth='\s*(.+?\.\d+)\s+(.*?-.*?-.*?-.*?-.*)\s*$'
+                    reg_guild_auth='\s*(.*?-.*?-.*?-.*?-.*)\s*$'
 
-        # Type 1 means it was a private message
-        elif rec_type == '1':
-            #reg_api_auth='\s*(\S+\s*\S+\.\d+)\s+(.*?-.*?-.*?-.*?-.*)\s*$'
-            reg_api_auth='\s*(.+?\.\d+)\s+(.*?-.*?-.*?-.*?-.*)\s*$'
-            reg_guild_auth='\s*(.*?-.*?-.*?-.*?-.*)\s*$'
-
-            #Command for verifying authentication
-            if re.match(reg_api_auth,raw_cmd):
-                    pair=re.search(reg_api_auth,raw_cmd)
-                    uname=pair.group(1)
-                    uapi=pair.group(2)
-                    limit_hit=BOT.TsClientLimitReached(uname)
-                    if DEBUG:
-                        print("Limit hit check: %s" %limit_hit)
-                    if not limit_hit:
-                        if BOT.clientNeedsVerify(rec_from_id):
-                            TS3Auth.log("Received verify response from %s" %rec_from_name)
-                            auth=TS3Auth.auth_request(uapi,uname)
+                    #Command for verifying authentication
+                    if re.match(reg_api_auth,raw_cmd):
+                            pair=re.search(reg_api_auth,raw_cmd)
+                            uname=pair.group(1)
+                            uapi=pair.group(2)
+                            limit_hit=BOT.TsClientLimitReached(uname)
                             if DEBUG:
-                                    TS3Auth.log('Name: |%s| API: |%s|' %(uname,uapi))
-                            if auth.success:
-                                    TS3Auth.log("Setting permissions for %s as verified." %rec_from_name)
+                                print("Limit hit check: %s" %limit_hit)
+                            if not limit_hit:
+                                if BOT.clientNeedsVerify(rec_from_id):
+                                    TS3Auth.log("Received verify response from %s" %rec_from_name)
+                                    auth=TS3Auth.auth_request(uapi,uname)
+                                    if DEBUG:
+                                            TS3Auth.log('Name: |%s| API: |%s|' %(uname,uapi))
+                                    if auth.success:
+                                            TS3Auth.log("Setting permissions for %s as verified." %rec_from_name)
 
-                                    #set permissions
-                                    BOT.setPermissions(rec_from_id)
+                                            #set permissions
+                                            BOT.setPermissions(rec_from_id)
 
-                                    #get todays date
-                                    today_date=datetime.date.today()
+                                            #get todays date
+                                            today_date=datetime.date.today()
 
-                                    #Add user to database so we can query their API key over time to ensure they are still on our server
-                                    BOT.addUserToDB(rec_from_id,uname,uapi,today_date,today_date)
+                                            #Add user to database so we can query their API key over time to ensure they are still on our server
+                                            BOT.addUserToDB(rec_from_id,uname,uapi,today_date,today_date)
 
-                                    #notify user they are verified
-                                    sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_success)
+                                            #notify user they are verified
+                                            sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_success)
+                                    else:
+                                            #Auth Failed
+                                            sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_fail)
+                                else:
+                                        TS3Auth.log("Received API Auth from %s, but %s is already verified. Notified user as such." %(rec_from_name,rec_from_name))
+                                        sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_alrdy_verified)
                             else:
-                                    #Auth Failed
-                                    sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_fail)
-                        else:
-                                TS3Auth.log("Received API Auth from %s, but %s is already verified. Notified user as such." %(rec_from_name,rec_from_name))
-                                sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_alrdy_verified)
-                    else:
-                        # client limit is set and hit
-                        sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_limit_Hit)
-                        TS3Auth.log("Received API Auth from %s, but %s has reached the client limit." %(rec_from_name,rec_from_name))
+                                # client limit is set and hit
+                                sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_limit_Hit)
+                                TS3Auth.log("Received API Auth from %s, but %s has reached the client limit." %(rec_from_name,rec_from_name))
 
-            elif rec_from_name != BOT.nickname.encode('utf-8'): #Had to encode bot nickname to match the encoded rec_from_name for a proper one to one match, otherwise the bot messages itself to oblivion.. reading it's own message
-                sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_rcv_default)
-                TS3Auth.log("Received bad response from %s [msg= %s]" %(rec_from_name,raw_cmd.encode('utf-8')))
+                    elif rec_from_name != BOT.nickname.encode('utf-8'): #Had to encode bot nickname to match the encoded rec_from_name for a proper one to one match, otherwise the bot messages itself to oblivion.. reading it's own message
+                        sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_rcv_default)
+                        TS3Auth.log("Received bad response from %s [msg= %s]" %(rec_from_name,raw_cmd.encode('utf-8')))
 
+        except:
+                TS3Auth.log("Horribly bad response, should have caused crash but I ignored the message outright")
+                
         return None
 
 #######################################
