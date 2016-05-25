@@ -101,7 +101,7 @@ class Bot:
         def removePermissions(self,client_id):
                 client_db_id = ts3conn.clientinfo(clid=client_id)[0].get('client_database_id')
                 if DEBUG:
-                        TS3Auth.log("Adding Permissions:  SGID: %s   CLDBID: %s" %(self.vgrp_id,client_db_id))
+                        TS3Auth.log("Removing Permissions:  SGID: %s   CLDBID: %s" %(self.vgrp_id,client_db_id))
 
                 #Remove user from group
                 try:
