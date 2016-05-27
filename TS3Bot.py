@@ -15,6 +15,7 @@ from bot_messages import * #Import all Static messages the BOT may need
 #### Load Configs
 #######################################
 
+current_version='1.1'
 
 configs=configparser.ConfigParser()
 configs.read('bot.conf')
@@ -82,37 +83,50 @@ class Bot:
                                 self.vgrp_id=group.get('sgid')
 
 
-        def clientNeedsVerify(self,client_id):
-                client_db_id = ts3conn.clientinfo(clid=client_id)[0].get('client_database_id')
+        def clientNeedsVerify(self,unique_client_id):
+                client_db_id = self.getTsDatabaseID(unique_client_id)
+
+                #Check if user is in verified group
                 if any(perm_grp.get('name') == verified_group for perm_grp in ts3conn.servergroupsbyclientid(cldbid=client_db_id)):
                         return False #User already verified
+
+                #Check if user is authenticated in database and if so, re-adds them to the group
+                current_entries=self.db_cursor.execute("SELECT * FROM users WHERE ts_db_id=?",  (unique_client_id,)).fetchall()
+                if len(current_entries) > 0:
+                        self.setPermissions(unique_client_id)
+                        return False
+                
                 return True #User not verified
 
-        def setPermissions(self,client_id):
-                client_db_id = ts3conn.clientinfo(clid=client_id)[0].get('client_database_id')
-                if DEBUG:
-                        TS3Auth.log("Adding Permissions:  SGID: %s   CLDBID: %s" %(self.vgrp_id,client_db_id))
+        def setPermissions(self,unique_client_id):
                 try:
-                        #Add user to group
-                        ts3conn.servergroupaddclient(sgid=self.vgrp_id,cldbid=client_db_id)
-                except:
-                        TS3Auth.log("Unable to add client to '%s' group. Does the group exist?" %verified_group)
+                        client_db_id = self.getTsDatabaseID(unique_client_id)
+                        if DEBUG:
+                                TS3Auth.log("Adding Permissions: CLUID [%s] SGID: %s   CLDBID: %s" %(unique_client_id, self.vgrp_id, client_db_id))
+                        try:
+                                #Add user to group
+                                self.ts_connection.servergroupaddclient(sgid=self.vgrp_id, cldbid=client_db_id)
+                        except:
+                                TS3Auth.log("Unable to add client to '%s' group. Does the group exist?" %verified_group)
+                except ts3.query.TS3QueryError as err:
+                        TS3Auth.log("BOT [setPermissions]: Failed; %s" %err) #likely due to bad client id
 
-        def removePermissions(self,client_id):
-                client_db_id = ts3conn.clientinfo(clid=client_id)[0].get('client_database_id')
-                if DEBUG:
-                        TS3Auth.log("Removing Permissions:  SGID: %s   CLDBID: %s" %(self.vgrp_id,client_db_id))
 
-                #Remove user from group
+        def removePermissions(self,unique_client_id):
                 try:
-                        ts3conn.servergroupdelclient(sgid=self.vgrp_id,cldbid=client_db_id)
-                except:
-                        TS3Auth.log("Unable to add client to '%s' group. Does the group exist?" %verified_group)
+                        client_db_id = self.getTsDatabaseID(unique_client_id)
+                        if DEBUG:
+                                TS3Auth.log("Removing Permissions: CLUID [%s] SGID: %s   CLDBID: %s" %(unique_client_id, self.vgrp_id, client_db_id))
 
-        def setGuildTags(self,client_id):
-                for i in ts3conn.clientinfo(clid=client_id):
-                        print(i)#TODO: Finish setting guild tags, command disabled globaly for now...
+                        #Remove user from group
+                        try:
+                                self.ts_connection.servergroupdelclient(sgid=self.vgrp_id, cldbid=client_db_id)
+                        except:
+                                TS3Auth.log("Unable to remove client from '%s' group. Does the group exist?" %verified_group)
+                except ts3.query.TS3QueryError as err:
+                        TS3Auth.log("BOT [removePermissions]: Failed; %s" %err) #likely due to bad client id
 
+                        
         def getUserDatabase(self):
                 if os.path.isfile(self.db_name):
                         self.db_conn = sqlite3.connect(self.db_name,check_same_thread=False,detect_types=sqlite3.PARSE_DECLTYPES)
@@ -126,31 +140,35 @@ class Bot:
                         self.db_cursor.execute('''CREATE TABLE users
                                 (ts_db_id text primary key, account_name text, api_key text, created_date date, last_audit_date date)''')
                         self.db_cursor.execute('''CREATE TABLE bot_info
-                                (last_succesful_audit date)''')
+                                (version text, last_succesful_audit date)''')
                         self.db_conn.commit()
-                        self.db_cursor.execute('INSERT INTO bot_info (last_succesful_audit) VALUES (?)', (datetime.date.today(),))
+                        self.db_cursor.execute('INSERT INTO bot_info (version, last_succesful_audit) VALUES (?,?)', (current_version, datetime.date.today(), ))
                         self.db_conn.commit()
 
 
         def TsClientLimitReached(self,gw_acct_name):
-            limit_reached=False
+            limit_reached = False
 
-            client_exists=self.db_cursor.execute("SELECT EXISTS(SELECT 1 FROM users WHERE account_name=?)",  (gw_acct_name,)).fetchone()
-            if client_exists[0] >= client_restriction_limit:
+            current_entries = self.db_cursor.execute("SELECT * FROM users WHERE account_name=?",  (gw_acct_name, )).fetchall()
+            if len(current_entries) >= client_restriction_limit:
                 limit_reached = True
             return limit_reached
 
-        def addUserToDB(self,client_db_id,account_name,api_key,created_date,last_audit_date):
-            client_exists=self.db_cursor.execute("SELECT EXISTS(SELECT * FROM users WHERE ts_db_id=?)",  (client_db_id,)).fetchone()
-            if client_exists[0] != 0: # If client Ts id is not already in DB
-                self.db_cursor.execute("""UPDATE users SET ts_db_id=?, account_name=?, api_key=?, created_date=?, last_audit_date=? WHERE ts_db_id=?""", (client_db_id, account_name, api_key, created_date, last_audit_date,client_db_id))
-                TS3Auth.log("Teamspeak ID %s already in Database updating with new Account Name '%s'. (likely permissions changed by a Teamspeak Admin)" %(client_db_id,account_name))
+        def addUserToDB(self,client_unique_id,account_name,api_key,created_date,last_audit_date):
+            client_id=self.getActiveTsUserID(client_unique_id)
+            client_exists=self.db_cursor.execute("SELECT * FROM users WHERE ts_db_id=?",  (client_unique_id,)).fetchall()
+            if len(client_exists) > 1:
+                TS3Auth.log('Function [addUserToDB] WARN: Found multipe database entries for single unique teamspeakid %s.' %client_unique_id, silent=True)
+            if len(client_exists) != 0: # If client TS database id is in BOT's database.
+                self.db_cursor.execute("""UPDATE users SET ts_db_id=?, account_name=?, api_key=?, created_date=?, last_audit_date=? WHERE ts_db_id=?""", (client_unique_id, account_name, api_key, created_date, last_audit_date,client_unique_id))
+                TS3Auth.log("Teamspeak ID %s already in Database updating with new Account Name '%s'. (likely permissions changed by a Teamspeak Admin)" %(client_unique_id,account_name))
             else:
-                self.db_cursor.execute("INSERT INTO users ( ts_db_id, account_name, api_key, created_date, last_audit_date) VALUES(?,?,?,?,?)",(client_db_id, account_name, api_key, created_date, last_audit_date))
+                self.db_cursor.execute("INSERT INTO users ( ts_db_id, account_name, api_key, created_date, last_audit_date) VALUES(?,?,?,?,?)",(client_unique_id, account_name, api_key, created_date, last_audit_date))
             self.db_conn.commit()
 
 
         def removeUserFromDB(self,client_db_id):
+            #client_db_id=
             self.db_cursor.execute("DELETE FROM users WHERE ts_db_id=?", (client_db_id,))
             self.db_conn.commit()
 
@@ -168,7 +186,7 @@ class Bot:
 
                 if DEBUG:
                         print("Audit: User ",audit_account_name)
-                        print("TODAY |%s|  LAST AUDIT |%s|" %(self.c_audit_date,audit_last_audit_date + datetime.timedelta(days=audit_period)))
+                        print("TODAY |%s|  NEXT AUDIT |%s|" %(self.c_audit_date,audit_last_audit_date + datetime.timedelta(days=audit_period)))
 
                 #compare audit date
 
@@ -181,13 +199,26 @@ class Bot:
                             self.db_conn.commit()
                     else:
                             TS3Auth.log("User %s is no longer on our server. Removing access...." %(audit_account_name))
-                            self.removeUserFromDB(audit_ts_id)
                             self.removePermissions(audit_ts_id)
+                            self.removeUserFromDB(audit_ts_id)
+
             self.db_cursor.execute('INSERT INTO bot_info (last_succesful_audit) VALUES (?)', (self.c_audit_date,))
             self.db_conn.commit()
 
         def broadcastMessage(self):
             self.ts_connection.sendtextmessage( targetmode=2,target=server_id, msg=bot_msg_broadcast)
+
+        def getActiveTsUserID(self,client_unique_id):
+            return self.ts_connection.clientgetids(cluid=client_unique_id)[0].get('clid')
+
+        def getTsDatabaseID(self,client_unique_id):
+            return self.ts_connection.clientgetdbidfromuid(cluid=client_unique_id)[0].get('cldbid')
+
+        def getTsUniqueID(self,client_id):
+            return self.ts_connection.clientgetuidfromclid(clid=client_id)[0].get('cldbid')
+             
+                
+
 
 #######################################
 
@@ -220,47 +251,40 @@ def my_event_handler(sender, event):
         """
         if DEBUG:
                 print("\nEvent:")
-                print("  sender:", sender)
+                #print("  sender:", sender)
                 print("  event.event:", event.event)
                 print("  event.parsed:", event.parsed)
                 print("\n\n")
 
-        try: # added to stop horribly bad messages from users breaking BOT
-                raw_cmd=event.parsed[0].get('msg')
-                rec_from_name=event.parsed[0].get('invokername').encode('utf-8') #fix any encoding issues introdcued by Teamspeak
-                rec_from_uid=event.parsed[0].get('invokeruid')
-                rec_from_id=event.parsed[0].get('invokerid')
-                rec_type=event.parsed[0].get('targetmode')
 
-                if rec_from_uid == 'serveradmin':
-                        return #ignore any serveradmin messages, aka seeing our own messages.
+        raw_cmd=event.parsed[0].get('msg')
+        rec_from_name=event.parsed[0].get('invokername').encode('utf-8') #fix any encoding issues introdcued by Teamspeak
+        rec_from_uid=event.parsed[0].get('invokeruid')
+        rec_from_id=event.parsed[0].get('invokerid')
+        rec_type=event.parsed[0].get('targetmode')
 
+        if rec_from_uid == 'serveradmin':
+                return #ignore any serveradmin messages, aka seeing our own messages.
+        try:
                 # Type 2 means it was channel text
                 if rec_type == '2':
                         cmd=commandCheck(raw_cmd) #sanitize the commands but also restricts commands to a list of known allowed commands
 
                         #
                         if cmd == 'verifyme':
-                                if BOT.clientNeedsVerify(rec_from_id):
+                                if BOT.clientNeedsVerify(rec_from_uid):
                                         TS3Auth.log("Verify Request Recieved from user '%s'. Sending PM now...\n        ...waiting for user response." %rec_from_name)
                                         sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_verify)
                                 else:
                                         TS3Auth.log("Verify Request Recieved from user '%s'. Already verified, notified user." %rec_from_name)
                                         sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_alrdy_verified)
 
-                        elif cmd == 'setguild':
-                                if BOT.clientNeedsVerify(rec_from_id):
-                                        TS3Auth.log("Received Guild Set request from '%s' but user is not verified. Sending PM requesting to verify first." %rec_from_name)
-                                        sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_sguild_nv)
-                                else:
-                                        TS3Auth.log("Received Guild Set request from user '%s'. Sending PM to begin changing tags." %rec_from_name)
-                                        sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_sguild)
 
                 # Type 1 means it was a private message
                 elif rec_type == '1':
                     #reg_api_auth='\s*(\S+\s*\S+\.\d+)\s+(.*?-.*?-.*?-.*?-.*)\s*$'
                     reg_api_auth='\s*(.+?\.\d+)\s+(.*?-.*?-.*?-.*?-.*)\s*$'
-                    reg_guild_auth='\s*(.*?-.*?-.*?-.*?-.*)\s*$'
+
 
                     #Command for verifying authentication
                     if re.match(reg_api_auth,raw_cmd):
@@ -271,7 +295,7 @@ def my_event_handler(sender, event):
                             if DEBUG:
                                 print("Limit hit check: %s" %limit_hit)
                             if not limit_hit:
-                                if BOT.clientNeedsVerify(rec_from_id):
+                                if BOT.clientNeedsVerify(rec_from_uid):
                                     TS3Auth.log("Received verify response from %s" %rec_from_name)
                                     auth=TS3Auth.auth_request(uapi,uname)
                                     if DEBUG:
@@ -280,13 +304,14 @@ def my_event_handler(sender, event):
                                             TS3Auth.log("Setting permissions for %s as verified." %rec_from_name)
 
                                             #set permissions
-                                            BOT.setPermissions(rec_from_id)
+                                            BOT.setPermissions(rec_from_uid)
 
                                             #get todays date
                                             today_date=datetime.date.today()
 
                                             #Add user to database so we can query their API key over time to ensure they are still on our server
-                                            BOT.addUserToDB(rec_from_id,uname,uapi,today_date,today_date)
+                                            BOT.addUserToDB(rec_from_uid,uname,uapi,today_date,today_date)
+                                            print ("Added user to DB with ID %s" %rec_from_uid)
 
                                             #notify user they are verified
                                             sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_success)
@@ -301,12 +326,12 @@ def my_event_handler(sender, event):
                                 sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_limit_Hit)
                                 TS3Auth.log("Received API Auth from %s, but %s has reached the client limit." %(rec_from_name,rec_from_name))
 
-                    elif rec_from_name != BOT.nickname.encode('utf-8'): #Had to encode bot nickname to match the encoded rec_from_name for a proper one to one match, otherwise the bot messages itself to oblivion.. reading it's own message
+                    else: 
                         sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_rcv_default)
                         TS3Auth.log("Received bad response from %s [msg= %s]" %(rec_from_name,raw_cmd.encode('utf-8')))
-
         except:
-                TS3Auth.log("Horribly bad response, should have caused crash but I ignored the message outright")
+                TS3Auth.log('BOT Event: Something went wrong during message received from teamspeak server. Likely bad user command/message.')
+
                 
         return None
 
