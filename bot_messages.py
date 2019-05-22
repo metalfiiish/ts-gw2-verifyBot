@@ -72,8 +72,7 @@ bot_msg_gld_needs_auth='''
         Otherwise, It appears you were attempting to verify but only sent me your API key. If veryfing remember to reply with your Account Name and API key.
 
    Ex.
-      <Account Name> <API Key>
-      TCWarrior.5463 7895D172-4991-9546-CB5B-78B015B0D8A72BC0E007-4FAF-48C3-9BF1-DA1OAD241266
+      7895D172-4991-9546-CB5B-78B015B0D8A72BC0E007-4FAF-48C3-9BF1-DA1OAD241266
 '''
 
 #Base Message sent to someone who gave us the API key to pull guild tags.
