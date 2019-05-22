@@ -84,11 +84,11 @@ bot_msg_gld_list='''
 #Default message we send to Private messages that didn't match a command
 bot_msg_rcv_default='''
   Hrm...So I get that your saying something but I don't understand what. Are you trying to get verified? If so please provide your
-    account name with API key in the format: <Account Name> <API Key>
+    account name with API key in the format:
 
     Example:
 
-      TCWarrior.5463 7895D172-4991-9546-CB5B-78B015B0D8A72BC0E007-4FAF-48C3-9BF1-DA1OAD241266
+      7895D172-4991-9546-CB5B-78B015B0D8A72BC0E007-4FAF-48C3-9BF1-DA1OAD241266
 
 '''
 
