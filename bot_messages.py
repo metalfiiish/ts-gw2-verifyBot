@@ -7,12 +7,10 @@
 bot_msg_verify='''
  Hello there! I believe you requested verification?
 
- If so please reply back to THIS PRIVATE MESSAGE with your Account Name (name with numbers) and API key.
+ If so please reply back to THIS PRIVATE MESSAGE with your API key.
 
  Ex.
-      <Account Name> <API Key>
-      TCWarrior.5463 7895D172-4991-9546-CB5B-78B015B0D8A72BC0E007-4FAF-48C3-9BF1-DA1OAD241266
-
+      7895D172-4991-9546-CB5B-78B015B0D8A72BC0E007-4FAF-48C3-9BF1-DA1OAD241266
 
    NOTE: Guild Wars 2 API keys can be created/deleted via ArenaNet site "https://account.arena.net/login?redirect_uri=%2Fapplications".
 
@@ -50,11 +48,10 @@ bot_msg_alrdy_verified='''
 
 #Message sent to someone who is not verified but asks to set guild tags via channel text.
 bot_msg_sguild_nv='''
-  I'm sorry, I can't help you set guild tags unless you are authenticated. Please verify first by replying to me with your Account Name (name with numbers) and API key.
+  I'm sorry, I can't help you set guild tags unless you are authenticated. Please verify first by replying to me with your API key.
 
    Ex.
-      <Account Name> <API Key>
-      TCWarrior.5463 7895D172-4991-9546-CB5B-78B015B0D8A72BC0E007-4FAF-48C3-9BF1-DA1OAD241266
+       7895D172-4991-9546-CB5B-78B015B0D8A72BC0E007-4FAF-48C3-9BF1-DA1OAD241266
 
 '''
 
