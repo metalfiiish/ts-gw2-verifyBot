@@ -106,8 +106,8 @@ class auth_request:
     def authCheck(self):
         log("%s %s Running auth check for %s" %(h_hdr,h_auth,self.name))
 
-        #Check if account name given is correct AND if they are on the required server
-        if self.user == self.name and self.users_server in required_servers:
+        #Check if they are on the required server
+        if self.users_server in required_servers:
 
             #Check if player has met character requirements
             if self.char_check:
