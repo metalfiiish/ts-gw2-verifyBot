@@ -1,6 +1,5 @@
-python=3.4
 blinker==1.4
-git+https://github.com/alacritythief/gw2api
+gw2api
 requests==2.20.0
 schedule==0.3.2
 ts3==0.7.1
