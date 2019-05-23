@@ -44,24 +44,20 @@ audit_period = int(configs.get('bot settings','audit_period')) #How long a singl
 audit_interval = int(configs.get('bot settings','audit_interval')) # how often the BOT audits all users
 client_restriction_limit= int(configs.get('bot settings','client_restriction_limit'))
 timer_msg_broadcast = int(configs.get('bot settings','broadcast_message_timer'))
+locale_setting = configs.get('bot settings','locale')
 
 # Debugging (on or off) True/False
 DEBUG = ast.literal_eval(configs.get('DEBUGGING','DEBUG'))
 
+locale = getLocale(locale_setting)
+
 #######################################
-
-# Banner that we send to all users upon initialization (not in bot_messages.py because it requires some variables from this script)
-bot_msg='''
- %s is alive once again! Type 'verifyme' in the "%s" channel to begin verification!
-''' %(bot_nickname,channel_name)
-
 
 #######################################
 ## Basic Classes
 #######################################
 
 class Bot:
-
         def __init__(self,db,ts_connection):
                 admin_data=ts_connection.whoami()
                 self.db_name=db
@@ -73,7 +69,6 @@ class Bot:
                 self.groupFind(verified_group)
                 self.getUserDatabase()
                 self.c_audit_date=datetime.date.today() # Todays Date
-
 
         #Helps find the group ID for 'verified users group'
         def groupFind(self,group_to_find):
@@ -206,7 +201,7 @@ class Bot:
             self.db_conn.commit()
 
         def broadcastMessage(self):
-            self.ts_connection.sendtextmessage( targetmode=2,target=server_id, msg=bot_msg_broadcast)
+            self.ts_connection.sendtextmessage( targetmode=2,target=server_id, msg=locale.get("bot_msg_broadcast"))
 
         def getActiveTsUserID(self,client_unique_id):
             return self.ts_connection.clientgetids(cluid=client_unique_id)[0].get('clid')
@@ -274,10 +269,10 @@ def my_event_handler(sender, event):
                         if cmd == 'verifyme':
                                 if BOT.clientNeedsVerify(rec_from_uid):
                                         TS3Auth.log("Verify Request Recieved from user '%s'. Sending PM now...\n        ...waiting for user response." %rec_from_name)
-                                        sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_verify)
+                                        sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=locale.get("bot_msg_verify"))
                                 else:
                                         TS3Auth.log("Verify Request Recieved from user '%s'. Already verified, notified user." %rec_from_name)
-                                        sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_alrdy_verified)
+                                        sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=locale.get("bot_msg_alrdy_verified"))
 
 
                 # Type 1 means it was a private message
@@ -319,24 +314,24 @@ def my_event_handler(sender, event):
                                             print ("Added user to DB with ID %s" %rec_from_uid)
 
                                             #notify user they are verified
-                                            sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_success)
+                                            sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=locale.get("bot_msg_success"))
                                         else:
                                             # client limit is set and hit
-                                            sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_limit_Hit)
+                                            sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=locale.get("bot_msg_limit_Hit"))
                                             TS3Auth.log("Received API Auth from %s, but %s has reached the client limit." %(rec_from_name,rec_from_name))
                                 
                                             
                                 else:
                                         #Auth Failed
-                                        sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_fail)
+                                        sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=locale.get("bot_msg_fail"))
                         else:
                                 TS3Auth.log("Received API Auth from %s, but %s is already verified. Notified user as such." %(rec_from_name,rec_from_name))
-                                sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_alrdy_verified)
+                                sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=locale.get("bot_msg_alrdy_verified"))
                                         
                         
 
                     else: 
-                        sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_rcv_default)
+                        sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=locale.get("bot_msg_rcv_default"))
                         TS3Auth.log("Received bad response from %s [msg= %s]" %(rec_from_name,raw_cmd.encode('utf-8')))
         except Exception as e:
                 TS3Auth.log('BOT Event: Something went wrong during message received from teamspeak server. Likely bad user command/message.')
@@ -408,7 +403,7 @@ while bot_loop_forever:
                     BOT.ts_connection.recv_in_thread()
 
                     #Send message to the server that the BOT is up
-                    BOT.ts_connection.sendtextmessage( targetmode=3,target=server_id, msg=bot_msg)
+                    BOT.ts_connection.sendtextmessage( targetmode=3,target=server_id, msg=locale.get("bot_msg",(bot_nickname,channel_name)))
                     TS3Auth.log("BOT is now registered to receive messages!")
 
 
