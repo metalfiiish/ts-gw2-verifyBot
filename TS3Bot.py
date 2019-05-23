@@ -283,13 +283,13 @@ def my_event_handler(sender, event):
                 # Type 1 means it was a private message
                 elif rec_type == '1':
                     #reg_api_auth='\s*(\S+\s*\S+\.\d+)\s+(.*?-.*?-.*?-.*?-.*)\s*$'
-                    reg_api_auth='\s*?-.*?-.*?-.*?-.*\s*$'
+                    reg_api_auth='\s*(.*?-.*?-.*?-.*?-.*)\s*$'
 
 
                     #Command for verifying authentication
                     if re.match(reg_api_auth,raw_cmd):
                         pair=re.search(reg_api_auth,raw_cmd)
-                        uapi=pair.group(0)
+                        uapi=pair.group(1)
 
                         if BOT.clientNeedsVerify(rec_from_uid):
                                 
@@ -338,8 +338,9 @@ def my_event_handler(sender, event):
                     else: 
                         sender.sendtextmessage( targetmode=1, target=rec_from_id, msg=bot_msg_rcv_default)
                         TS3Auth.log("Received bad response from %s [msg= %s]" %(rec_from_name,raw_cmd.encode('utf-8')))
-        except:
+        except Exception as e:
                 TS3Auth.log('BOT Event: Something went wrong during message received from teamspeak server. Likely bad user command/message.')
+                TS3Auth.log(e)
 
                 
         return None
