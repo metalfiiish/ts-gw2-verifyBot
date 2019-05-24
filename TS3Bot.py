@@ -44,7 +44,12 @@ audit_period = int(configs.get('bot settings','audit_period')) #How long a singl
 audit_interval = int(configs.get('bot settings','audit_interval')) # how often the BOT audits all users
 client_restriction_limit= int(configs.get('bot settings','client_restriction_limit'))
 timer_msg_broadcast = int(configs.get('bot settings','broadcast_message_timer'))
-locale_setting = configs.get('bot settings','locale')
+
+locale_setting = "EN"
+try:
+    locale_setting = configs.get('bot settings','locale')
+except configparser.NoOptionError:
+    TS3Auth.log("No config setting 'locale' found in the section [bot settings]. Please specify an available locale setting (ex. EN or DE). Falling back to English.")
 
 # Debugging (on or off) True/False
 DEBUG = ast.literal_eval(configs.get('DEBUGGING','DEBUG'))
