@@ -6,8 +6,6 @@ import ast
 auth_configs=configparser.ConfigParser()
 auth_configs.read('bot.conf')
 
-
-
 required_servers = ast.literal_eval(auth_configs.get('auth settings','required_servers')) # expects a pythonic list, Ex. ['Tarnished Coast','Kaineng']
 required_level = auth_configs.get('auth settings','required_level')
 
@@ -34,7 +32,6 @@ def log(msg,silent=False):
 # Class for an authentication request from user
 
 class auth_request:
-
     def __init__(self,api_key,user_id=''): #User ID left at None for queries that don't require authentication. If left at None the 'success' will always fail due to self.authCheck().
         self.key = api_key
         self.user = user_id
@@ -56,23 +53,16 @@ class auth_request:
             self.char_dump=gw2api.v2.characters.page(page=0)
             log('%s %s Character data loaded for %s.' %(h_hdr,h_char,self.user))
             self.charCheck()
-	    
         except:
-                log('%s %s Unable to load character data for %s. Bad API key or API key is not set to allow "character" queries.' %(h_hdr,h_char,self.user))
+            log('%s %s Unable to load character data for %s. Bad API key or API key is not set to allow "character" queries.' %(h_hdr,h_char,self.user))
 		
     def pushAccountAuth(self):
         try:
             self.getAccountDetails()
             log("%s %s Account loaded for %s" %(h_hdr,h_acct,self.user))
             self.authCheck()
-
         except:
             log('%s %s Possibly bad API Key. Error obtaining account details for %s. (Does the API key allow "account" queries?)' %(h_hdr,h_acct,self.user))
-
-
-
-
-
 
     def getAccountDetails(self):
         gw2api.v2.account.set_token(self.key)
@@ -100,8 +90,6 @@ class auth_request:
         self.guild_tags = []
         for guild_id in self.guilds:
             self.guild_tags.append(gw2api.guild_details(guild_id).get('tag'))
-
-
 
     def authCheck(self):
         log("%s %s Running auth check for %s" %(h_hdr,h_auth,self.name))
