@@ -9,13 +9,13 @@
 [teamspeak connection settings]
 
 #can be IP or FQDN
-host = localhost
+host = 127.0.0.1
 
 # Default port for ServerQuery access. Shouldn't need to change this.
 port = 10011
 
 user = serveradmin
-passwd = 1znNMtrN
+passwd = xxxxxxx
 
 #######################################
 
@@ -29,10 +29,10 @@ passwd = 1znNMtrN
 server_id = 1
 
 #Channel we want  the bot to sit in and listen for requests
-channel_name = Verify
+channel_name = Registration
 
 #Group the BOT will add people to if they authenticate
-verified_group = TC Verified
+verified_group = Verified
 
 #######################################
 
@@ -52,7 +52,7 @@ bot_sleep_conn_lost=30
 bot_sleep_idle=15
 
 # options are: ['verifyme','setguild'] --Can be any combinations of options for allowed commands
-cmd_list=['verifyme']
+cmd_list=['verifyme','setguild']
 
 #Change the name of the database file the script will use
 db_file_name = BOT.db
@@ -70,6 +70,9 @@ client_restriction_limit=2
 # How frequentin seconds the bot should advertise the broadcast message info it's channel (restricted by how often the bot is checking for scheduled items changeable in config option 'bot_sleep_idle')
 # Set to 0 to disable broadcasting
 broadcast_message_timer=0
+
+# The language in which the bot talks to the users. Currently, only EN and DE are supported
+locale=EN
 
 #######################################
 

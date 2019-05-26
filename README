@@ -13,4 +13,4 @@ The guild wars authentication uses the API keys from user's accounts. It also re
 NOTE: gw2api module by author 'hackedd' has been patched for Python3 now so you can pull the main gw2api repo instead of the forked one. 
 
 
-Please modify the bot.conf variables as needed.
+Please copy the `bot.conf.example` to `bot.conf` and modify the variables as needed.
