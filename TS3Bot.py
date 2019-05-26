@@ -249,8 +249,8 @@ def verification_request_handler(ts3conn, event):
         rec_from_id=event.parsed[0].get('invokerid')
         rec_type=event.parsed[0].get('targetmode')
 
-        if rec_from_uid == 'serveradmin':
-            return #ignore any serveradmin messages, aka seeing our own messages.
+        if rec_from_uid == bot_nickname:
+            return #ignore our own messages.
         try:
             # Type 2 means it was channel text
             if rec_type == '2':
@@ -340,7 +340,31 @@ while bot_loop_forever:
             #Define our bots info
             BOT=Bot(db_file_name,ts3conn)
             TS3Auth.log ("BOT loaded into server (%s) as %s (%s). Nickname '%s'" %(server_id,BOT.name,BOT.client_id,BOT.nickname))
-            ts3conn.exec_("clientupdate", client_nickname=BOT.nickname)
+
+            imposter = ts3conn.query("clientfind", pattern=BOT.nickname).first() # check if nickname is already in use
+            if imposter:
+                try:
+                    ts3conn.exec_("clientkick", reasonid=5, reasonmsg="Reserved Nickname", clid=imposter.get("clid"))
+                    TS3Auth.log("Kicked user who was using the reserved registration bot name '%s'." % (BOT.nickname,))
+                except ts3.query.TS3QueryError as e:
+                    i = 1
+                    new_nick = "%s(%d)" % (BOT.nickname,i)
+                    try:
+                        while ts3conn.query("clientfind", pattern=new_nick).first():
+                            i += 1
+                            new_nick = "%s(%d)" % (BOT.nickname,i)
+                    except ts3.query.TS3QueryError as e:
+                        # what an absolute disaster of an API!
+                        # Instead of giving a None to signify that no
+                        # user with the specified username exists, a vacuous error
+                        # "invalid clientID", is thrown. So we have to catch exceptions to 
+                        # do control flow. Thanks for nothing.
+                        new_nick = "%s(%d)" % (BOT.nickname,i)
+                        ts3conn.exec_("clientupdate", client_nickname=new_nick)
+                        BOT.nickname = new_nick
+                        TS3Auth.log("Renamed self to '%s' after kicking existing user with reserved name failed. Warning: this usually only happens for serverquery logins, meaning you are running multiple bots or you are having stale logins from crashed bot instances on your server. Only restarts can solve the latter." % (new_nick,))
+            else:
+                ts3conn.exec_("clientupdate", client_nickname=BOT.nickname)
 
             # Find the verify channel
             verify_channel_id=0

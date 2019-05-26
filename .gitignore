@@ -1,4 +1,6 @@
 bot.conf
+bot.conf.live
+bot.conf.local
 # Windows image file caches
 Thumbs.db
 ehthumbs.db
