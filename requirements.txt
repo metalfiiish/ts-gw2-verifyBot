@@ -2,4 +2,4 @@ blinker==1.4
 gw2api
 requests==2.20.0
 schedule==0.3.2
-PyTS3
+ts3>=2.0.0b2
