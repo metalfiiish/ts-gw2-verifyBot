@@ -74,6 +74,14 @@ broadcast_message_timer=0
 # The language in which the bot talks to the users. Currently, only EN and DE are supported
 locale=EN
 
+# Whether a user should lose all groups when his API key is no longer accepted.
+# This is useful if you have groups for guilds that would enable users that lost the authentification group to still see the server.
+purge_completely=False
+
+# This is a list of groups that will stay on users, even if they lose authentification, if you enabled the purge_completely feature.
+# Your admin group should always be in this list to avoid getting locked out of your own server if your left the allowed GW2 servers.
+purge_whitelist=['Server Admin']
+
 #######################################
 
 #######################################

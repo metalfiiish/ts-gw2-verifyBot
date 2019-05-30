@@ -48,11 +48,23 @@ audit_interval = int(configs.get('bot settings','audit_interval')) # how often t
 client_restriction_limit= int(configs.get('bot settings','client_restriction_limit'))
 timer_msg_broadcast = int(configs.get('bot settings','broadcast_message_timer'))
 
+purge_completely = False
+try:
+    purge_completely = ast.literal_eval(configs.get('bot settings','purge_completely'))
+except configparser.NoOptionError:
+    TS3Auth.log("No config setting 'purge_completely' found in the section [bot settings]. Please specify a boolean. Falling back to False.")
+
 locale_setting = "EN"
 try:
     locale_setting = configs.get('bot settings','locale')
 except configparser.NoOptionError:
     TS3Auth.log("No config setting 'locale' found in the section [bot settings]. Please specify an available locale setting (ex. EN or DE). Falling back to English.")
+
+purge_whitelist = ["Server Admin"]
+try:
+    purge_whitelist = ast.literal_eval(configs.get('bot settings','purge_whitelist'))
+except configparser.NoOptionError:
+    TS3Auth.log("No config setting 'purge_whitelist' found in the section [bot settings]. Falling back to 'Server Admin' group only.")
 
 keepalive_interval = 60
 
@@ -112,7 +124,7 @@ class Bot:
                 TS3Auth.log("Adding Permissions: CLUID [%s] SGID: %s   CLDBID: %s" %(unique_client_id, self.vgrp_id, client_db_id))
             try:
                 #Add user to group
-                self.ts_connection.exec("servergroupaddclient", sgid=self.vgrp_id, cldbid=client_db_id)
+                self.ts_connection.exec_("servergroupaddclient", sgid=self.vgrp_id, cldbid=client_db_id)
             except:
                 TS3Auth.log("Unable to add client to '%s' group. Does the group exist?" %verified_group)
         except ts3.query.TS3QueryError as err:
@@ -126,9 +138,18 @@ class Bot:
 
             #Remove user from group
             try:
-                self.ts_connection.exec("servergroupdelclient", sgid=self.vgrp_id, cldbid=client_db_id)
+                self.ts_connection.exec_("servergroupdelclient", sgid=self.vgrp_id, cldbid=client_db_id)
             except:
-                TS3Auth.log("Unable to remove client from '%s' group. Does the group exist?" %verified_group)
+                TS3Auth.log("Unable to remove client from '%s' group. Does the group exist and are they member of the group?" %verified_group)
+            #Remove users from all groups, except the whitelisted ones
+            if purge_completely:
+                assigned_groups = self.ts_connection.query("servergroupsbyclientid", cldbid=client_db_id).all()
+                for g in assigned_groups:
+                    if g.get("name") not in purge_whitelist:
+                        try:
+                            self.ts_connection.exec_("servergroupdelclient", sgid=g.get("sgid"), cldbid=client_db_id)
+                        except:
+                            pass
         except ts3.query.TS3QueryError as err:
             TS3Auth.log("BOT [removePermissions]: Failed; %s" %err) #likely due to bad client id
                     
@@ -341,29 +362,31 @@ while bot_loop_forever:
             BOT=Bot(db_file_name,ts3conn)
             TS3Auth.log ("BOT loaded into server (%s) as %s (%s). Nickname '%s'" %(server_id,BOT.name,BOT.client_id,BOT.nickname))
 
-            imposter = ts3conn.query("clientfind", pattern=BOT.nickname).first() # check if nickname is already in use
-            if imposter:
-                try:
-                    ts3conn.exec_("clientkick", reasonid=5, reasonmsg="Reserved Nickname", clid=imposter.get("clid"))
-                    TS3Auth.log("Kicked user who was using the reserved registration bot name '%s'." % (BOT.nickname,))
-                except ts3.query.TS3QueryError as e:
-                    i = 1
-                    new_nick = "%s(%d)" % (BOT.nickname,i)
+            # What an absolute disaster of an API!
+            # Instead of giving a None to signify that no
+            # user with the specified username exists, a vacuous error
+            # "invalid clientID", is thrown from clientfind.
+            # So we have to catch exceptions to do control flow. 
+            # Thanks for nothing.
+            try:
+                imposter = ts3conn.query("clientfind", pattern=BOT.nickname).first() # check if nickname is already in use
+                if imposter:
                     try:
-                        while ts3conn.query("clientfind", pattern=new_nick).first():
-                            i += 1
-                            new_nick = "%s(%d)" % (BOT.nickname,i)
+                        ts3conn.exec_("clientkick", reasonid=5, reasonmsg="Reserved Nickname", clid=imposter.get("clid"))
+                        TS3Auth.log("Kicked user who was using the reserved registration bot name '%s'." % (BOT.nickname,))
                     except ts3.query.TS3QueryError as e:
-                        # what an absolute disaster of an API!
-                        # Instead of giving a None to signify that no
-                        # user with the specified username exists, a vacuous error
-                        # "invalid clientID", is thrown. So we have to catch exceptions to 
-                        # do control flow. Thanks for nothing.
+                        i = 1
                         new_nick = "%s(%d)" % (BOT.nickname,i)
-                        ts3conn.exec_("clientupdate", client_nickname=new_nick)
-                        BOT.nickname = new_nick
-                        TS3Auth.log("Renamed self to '%s' after kicking existing user with reserved name failed. Warning: this usually only happens for serverquery logins, meaning you are running multiple bots or you are having stale logins from crashed bot instances on your server. Only restarts can solve the latter." % (new_nick,))
-            else:
+                        try:
+                            while ts3conn.query("clientfind", pattern=new_nick).first():
+                                i += 1
+                                new_nick = "%s(%d)" % (BOT.nickname,i)
+                        except ts3.query.TS3QueryError as e:
+                            new_nick = "%s(%d)" % (BOT.nickname,i)
+                            ts3conn.exec_("clientupdate", client_nickname=new_nick)
+                            BOT.nickname = new_nick
+                            TS3Auth.log("Renamed self to '%s' after kicking existing user with reserved name failed. Warning: this usually only happens for serverquery logins, meaning you are running multiple bots or you are having stale logins from crashed bot instances on your server. Only restarts can solve the latter." % (new_nick,))
+            except ts3.query.TS3QueryError:
                 ts3conn.exec_("clientupdate", client_nickname=BOT.nickname)
 
             # Find the verify channel
